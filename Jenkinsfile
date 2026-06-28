@@ -11,10 +11,21 @@ pipeline {
         stage('Compile') {
             steps {
                 dir('java-maven-app') {
+                    sh 'pwd'
+                    sh 'ls -la'
+                    sh 'find . -maxdepth 3'
                     sh 'mvn clean compile'
                 }
             }
         }
+
+        // stage('Compile') {
+        //     steps {
+        //         dir('java-maven-app') {
+        //             sh 'mvn clean compile'
+        //         }
+        //     }
+        // }
 
         stage('Test') {
             steps {
@@ -59,7 +70,7 @@ pipeline {
     post {
         success {
             echo 'Pipeline executed successfully!'
-            cleanWs()
+            // cleanWs()
         }
 
         failure {
