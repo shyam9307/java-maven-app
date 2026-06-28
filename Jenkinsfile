@@ -8,31 +8,50 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                echo 'Checking out source code...'
-                checkout scm
-            }
-        }
-
         stage('Compile') {
             steps {
-                echo 'Compiling application...'
-                sh 'mvn clean compile'
+                dir('java-maven-app') {
+                    sh 'mvn clean compile'
+                }
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Running unit tests...'
-                sh 'mvn test'
+                dir('java-maven-app') {
+                    sh 'mvn test'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                dir('java-maven-app') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh '''
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=java-maven-demo \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.token=$SONAR_AUTH_TOKEN
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
         stage('Package') {
             steps {
-                echo 'Packaging application...'
-                sh 'mvn package'
+                dir('java-maven-app') {
+                    sh 'mvn package'
+                }
             }
         }
     }
@@ -40,14 +59,11 @@ pipeline {
     post {
         success {
             echo 'Pipeline executed successfully!'
+            cleanWs()
         }
 
         failure {
             echo 'Pipeline failed.'
-        }
-
-        always {
-            cleanWs()
         }
     }
 }
